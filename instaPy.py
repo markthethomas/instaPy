@@ -25,40 +25,56 @@ def instaPy(client_id, tag):
 
     # Check to see if we are on the first page
     # todo check to see that iterations after the zeroeth run as they should
-    if page == 0:
-        url = "https://api.instagram.com/v1/tags/{0}/media/recent?client_id={1}".format(tag, client_id)
-        response = requests.get(url, stream=True)
-        JSONrespsonse = response.json()
-        nextJSON = int(JSONrespsonse["pagination"]["min_tag_id"]) - 8000000000000
-    # If the page doesn't equal = 0, change up the URL and paginate
-    elif page != 0:
-        url = "https://api.instagram.com/v1/tags/{0}/media/recent?client_id={1}?min_tag_id=".format(tag, client_id, nextJSON)
-        response = requests.get(url, stream=True)
-        JSONrespsonse = response.json()
-        nextJSON = int(JSONrespsonse["pagination"]["min_tag_id"]) - 8000000000000
-
+    # Set some useful utilities up
+    responseArrayLength = 1
     # TODO: rm these before release
     print("Next MIN ID is", nextJSON)
-    print(len(JSONrespsonse["data"]))
+    print(responseArrayLength)
+    loopCounter = 0
+    while loopCounter < responseArrayLength:
+        if page == 0:
+            url = "https://api.instagram.com/v1/tags/{0}/media/recent?client_id={1}".format(tag, client_id)
+            response = requests.get(url, stream=True)
+            JSONrespsonse = response.json()
+            nextJSON = int(JSONrespsonse["pagination"]["min_tag_id"]) - 8000000000000
+            responseArrayLength = len(JSONrespsonse["data"])
+        # If the page doesn't equal = 0, change up the URL and paginate
+        elif page != 0:
+            url = "https://api.instagram.com/v1/tags/{0}/media/recent?client_id={1}?min_tag_id=".format(tag, client_id, nextJSON)
+            response = requests.get(url, stream=True)
+            JSONrespsonse = response.json()
+            nextJSON = int(JSONrespsonse["pagination"]["min_tag_id"]) - 8000000000000
+            responseArrayLength = len(JSONrespsonse["data"])
+        with click.progressbar(JSONrespsonse["data"]) as data:
+            for media_object in data:
+                # Set the link and ID so we can get the file and give it a decent name
+                link = JSONrespsonse["data"][index]["images"]["thumbnail"]["url"]
+                id = JSONrespsonse["data"][index]["id"]
 
-    for media_object in JSONrespsonse["data"]:
-        # Set the link and ID so we can get the file and give it a decent name
-        link = JSONrespsonse["data"][index]["images"]["standard_resolution"]["url"]
-        id = JSONrespsonse["data"][index]["id"]
+                # Utils for dev
+                # print("Link is:", link)
+                # print("ID is:", id)
+                # print("Index is currently",index)
 
-        # Utils for dev
-        print("Link is:", link)
-        print("ID is:", id)
-        print("Index is currently",index)
+                image = requests.get(link, stream=True)
+                with open('{0}.jpg'.format(id), 'wb') as out_file:
+                    shutil.copyfileobj(image.raw, out_file)
+                if index < responseArrayLength:
+                    index += 1
+                    print("Index currently is",index)
+                elif index == responseArrayLength:
+                    index = 0
+                    page +=1
+                print("index is currently", index)
+                if loopCounter == responseArrayLength:
+                    loopCounter = 0
 
-        image = requests.get(link, stream=True)
-        with open('{0}.jpg'.format(id), 'wb') as out_file:
-            shutil.copyfileobj(image.raw, out_file)
-        if index <= len(JSONrespsonse["data"]):
-            index += 1
-        else:
-            page +=1
-    # Clear response after completion
+                # print(loopCounter)
+                # print("Page is currently", page)
+                # print("Index currently is",index)
+
+
+        # Clear response after completion
     del response
 
 # Run
