@@ -61,13 +61,14 @@ def instaPy(client_id, tag):
                     shutil.copyfileobj(image.raw, out_file)
                 if index < responseArrayLength:
                     index += 1
-                    print("Index currently is",index)
+                    loopCounter += 1
                 elif index == responseArrayLength:
                     index = 0
                     page +=1
-                print("index is currently", index)
                 if loopCounter == responseArrayLength:
                     loopCounter = 0
+                print("Loop counter is currently", loopCounter)
+                print("index is currently", index)
 
                 # print(loopCounter)
                 # print("Page is currently", page)
